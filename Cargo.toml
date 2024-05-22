@@ -2,13 +2,28 @@
 name = "loggit"
 version = "0.1.0"
 edition = "2021"
+build = "build.rs"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+async-trait = "0.1.80"
 serde = { version = "1.0.202", features = ["derive"] }
+uniffi = { version = "0.27.2", features = ["cli"] }
 uuid ={ version = "1.8.0", features = ["v4"] } 
 
 [lib]
 name = "loggit"
 path = "src/lib.rs"
+crate-type = ["staticlib", "cdylib", "lib"]
+
+[build-dependencies]
+uniffi = { version = "0.27.2", features = ["build", "bindgen"] }
+uniffi_bindgen = "0.23.0"
+
+[dev-dependencies]
+uniffi = { version = "0.27.2", features = ["bindgen-tests"] }
+
+[[bin]]
+name = "uniffi-bindgen"
+path = "uniffi-bindgen.rs"

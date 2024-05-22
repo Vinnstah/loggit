@@ -24,11 +24,7 @@ impl Log {
 
 impl Display for Log {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(
-            f,
-            "[{}] {:#?}: {}",
-            self.level, self.timestamp, self.message
-        )
+        write!(f, "[{}] {:#?}: {}", self.level, self.timestamp, self.message)
     }
 }
 
@@ -54,7 +50,13 @@ pub enum Level {
 
 impl Display for Level {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.to_string())
+        match self {
+            Level::Debug => write!(f, "Debug"),
+            Level::Trace => write!(f, "Trace"),
+            Level::Normal => write!(f, "Normal"),
+            Level::Error => write!(f, "Error"),
+            Level::Critical => write!(f, "Critical"),
+        }
     }
 }
 
@@ -112,5 +114,35 @@ mod tests {
             Level::Normal,
         );
         assert_eq!(log.level, Level::Normal);
+    }
+
+    #[test]
+    fn display_level() {
+        let log = Log::new(
+            Context::new(String::new()),
+            Message::new(String::new()),
+            Level::Normal,
+        );
+        assert_eq!(log.level.to_string(), "Normal".to_owned());
+    }
+
+    #[test]
+    fn display_context() {
+        let log = Log::new(
+            Context::new("Context".to_owned()),
+            Message::new(String::new()),
+            Level::Normal,
+        );
+        assert_eq!(log.context.ctx.to_string(), "Context".to_owned());
+    }
+
+    #[test]
+    fn display_log() {
+        let log = Log::new(
+            Context::new("Context".to_owned()),
+            Message::new(String::new()),
+            Level::Normal,
+        );
+        assert_eq!(log.to_string(), format!("[Normal] {:#?}: ", log.timestamp));
     }
 }
