@@ -1,4 +1,6 @@
-use crate::log::Log;
+use uniffi::{Enum, Object, Record};
+
+use crate::{log::Log, network_antenna::network_antenna::NetworkAntenna};
 use std::{
     fs::File,
     io::{Read, Write},
@@ -6,67 +8,27 @@ use std::{
     vec,
 };
 
-pub trait Logger {
-    fn log(&self, gateway: Arc<impl Gateway>, log: Log) -> ();
-}
+// pub trait Logger {
+//     fn log(&self, gateway: Arc<impl Gateway>, log: Log) -> ();
+// }
 
-pub trait Gateway {
-    fn upload_log(&self, log: Log) -> Result<usize, std::io::Error>;
-    fn retrieve_logs(&self) -> Result<Vec<Log>, std::io::Error>;
-    fn logging_strategy(&self) -> &LoggingStrategy;
-}
+// pub trait Gateway {
+//     fn upload_log(&self, log: Log) -> Result<usize, std::io::Error>;
+//     fn retrieve_logs(&self) -> Result<Vec<Log>, std::io::Error>;
+//     fn logging_strategy(&self) -> &LoggingStrategy;
+// }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Enum, PartialEq, Eq)]
 pub enum LoggingStrategy {
     Local,
     Cloud(Provider),
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Enum, PartialEq, Eq)]
 pub enum Provider {
     Azure,
     AWS,
     GCP,
-}
-
-#[derive(Clone)]
-pub struct Client {
-    pub strategy: LoggingStrategy,
-}
-
-impl Client {
-    pub fn new(strategy: LoggingStrategy) -> Self {
-        Self { strategy }
-    }
-}
-
-impl Gateway for Client {
-    fn upload_log(&self, log: Log) -> Result<usize, std::io::Error> {
-        let mut buffer = File::create("log.txt")?;
-        buffer.write(log.to_string().as_bytes())
-    }
-
-    fn retrieve_logs(&self) -> Result<Vec<Log>, std::io::Error> {
-        let mut f = File::open("log.txt")?;
-        let mut buffer = [0; 10];
-
-        // read up to 10 bytes
-        let n = f.read(&mut buffer[..])?;
-
-        println!("The bytes: {:?}", &buffer[..n]);
-
-        Ok(vec![])
-    }
-
-    fn logging_strategy(&self) -> &LoggingStrategy {
-        &self.strategy
-    }
-}
-
-impl Logger for Client {
-    fn log(&self, gateway: Arc<impl Gateway>, log: Log) -> () {
-        gateway.upload_log(log).expect("");
-    }
 }
 
 #[cfg(test)]

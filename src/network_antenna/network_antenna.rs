@@ -1,39 +1,29 @@
-use std::collections::HashMap;
-
+use crate::network_antenna::error::FFIBridgeError;
 use uniffi::Record;
 
+use super::{error::NetworkingError, network_request::NetworkRequest};
+
+#[uniffi::export(with_foreign)]
+#[async_trait::async_trait]
 pub trait NetworkAntenna: Send + Sync {
-    async fn make_request(
+    async fn execute_network_request(
         &self,
-        request: FFINetworkingRequest,
-    ) -> Result<FFINetworkingResponse, FFINetworkingError>;
+        request: NetworkRequest,
+    ) -> Result<NetworkingResponse, NetworkingError>;
 }
 
 #[derive(Record, Clone, Debug, PartialEq, Eq)]
-pub struct FFINetworkingRequest {
-    pub url: String,
-    pub method: String,
-    pub headers: HashMap<String, String>,
-
-    pub body: Vec<u8>,
-}
-
-#[derive(Record, Clone, Debug, PartialEq, Eq)]
-pub struct FFINetworkingResponse {
+pub struct NetworkingResponse {
     pub status_code: u16,
 
     /// Can be empty.
     pub body: Vec<u8>,
 }
 
-// impl From<FFINetworkingError> for FFIBridgeError {
-//     fn from(value: FFINetworkingError) -> Self {
-//         Self::FromFFI {
-//             error: value.into(),
-//         }
-//     }
-// }
-
-pub enum FFIBridgeError {}
-pub enum FFINetworkingError {}
-
+impl From<NetworkingError> for FFIBridgeError {
+    fn from(value: NetworkingError) -> Self {
+        Self::FromFFI {
+            error: value.into(),
+        }
+    }
+}

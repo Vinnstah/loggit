@@ -1,9 +1,10 @@
-use std::{fmt::Display, time::SystemTime};
+use std::{fmt::{Debug, Display}, time::SystemTime};
 
 use serde::{Deserialize, Serialize};
+use uniffi::{Enum, Record};
 use uuid::Uuid;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Record)]
 pub struct Log {
     pub context: Context,
     pub message: Message,
@@ -11,7 +12,9 @@ pub struct Log {
     pub timestamp: SystemTime,
 }
 
+#[uniffi::export]
 impl Log {
+    #[uniffi::constructor]
     pub fn new(context: Context, message: Message, level: Level) -> Self {
         Self {
             context,
@@ -28,7 +31,7 @@ impl Display for Log {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Record)]
 pub struct Context {
     pub ctx: String,
 }
@@ -39,13 +42,21 @@ impl Context {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Enum)]
 pub enum Level {
     Debug,
     Trace,
     Normal,
     Error,
     Critical,
+}
+
+#[derive(Debug, Serialize, Deserialize, PartialEq, Enum)]
+pub enum Filter {
+    Time,
+    Context,
+    Text,
+    Level(Level)
 }
 
 impl Display for Level {
@@ -60,7 +71,7 @@ impl Display for Level {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Record)]
 pub struct Message {
     id: String,
     pub message: String,
