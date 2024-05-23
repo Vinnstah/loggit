@@ -1,12 +1,11 @@
 use super::{error::CommonError, network_antenna::NetworkAntenna, network_request::NetworkRequest};
 use crate::{
-    log::{Filter, Log},
+    log::{Context, Filter, Log, Message},
     logger::LoggingStrategy,
 };
 use serde::Deserialize;
 use std::{
     any::type_name,
-    error::Error,
     fs::File,
     io::{Read, Write},
     sync::Arc,
@@ -97,31 +96,68 @@ impl HttpClient {
 }
 
 impl Client {
-    fn write_log(&self, log: Log) -> Result<usize, std::io::Error> {
+    pub fn write_log(&self, log: Log) -> Result<usize, std::io::Error> {
         match self.strategy {
             LoggingStrategy::Local => {
                 let mut buffer = File::create("log.txt")?;
-                buffer.write(log.to_string().as_bytes())
+                let serialized_log = bincode::serialize(&log).expect("Serialize log");
+                buffer.write(&serialized_log)
             }
             LoggingStrategy::Cloud(_) => todo!(),
         }
     }
 
-    fn retrieve_logs(&self, filter: Filter) -> Result<Vec<Log>, std::io::Error> {
+    pub fn retrieve_logs(&self, filter: Filter) -> Result<Log, std::io::Error> {
         let mut f = File::open("log.txt")?;
-        let mut buffer = [0; 10];
+        let mut buffer: Vec<u8> = vec![];
 
-        // read up to 10 bytes
-        let n = f.read(&mut buffer[..])?;
+        let _ = f.read_to_end(&mut buffer)?;
+        let log = bincode::deserialize::<Log>(&buffer).expect("Deserialize Log");
+        println!("The deserialize log: {:?}", &log);
 
-        println!("The bytes: {:?}", &buffer[..n]);
-
-        Ok(vec![])
+        Ok(log)
     }
 }
 
-// impl Client {
-//     fn log(&self, gateway: Arc<impl Gateway>, log: Log) -> () {
-//         gateway.upload_log(log).expect("");
-//     }
-// }
+pub trait Placeholder {
+    fn placeholder() -> Self;
+}
+
+impl Placeholder for Log {
+    fn placeholder() -> Self {
+        Self::new(
+            Context { ctx: String::new() },
+            Message::new("Placeholder Log".to_string()),
+            crate::log::Level::Normal,
+        )
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::fs::File;
+
+    use crate::{
+        log::Log,
+        logger::LoggingStrategy,
+        network_antenna::client::{Client, Placeholder},
+    };
+
+    #[test]
+    fn write_to_file() {
+        let placeholder = Log::placeholder();
+        let client = Client::new(LoggingStrategy::Local, None);
+        client.write_log(placeholder).expect("Write log to file");
+        assert!(File::open("log.txt").is_ok())
+    }
+
+    #[test]
+    fn read_message_from_file() {
+        write_to_file();
+        let client = Client::new(LoggingStrategy::Local, None);
+        let log = client
+            .retrieve_logs(crate::log::Filter::Text)
+            .expect("Retrieve and deserialize log");
+        assert_eq!(log.message.message, "Placeholder Log".to_owned())
+    }
+}

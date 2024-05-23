@@ -370,6 +370,7 @@ name = "loggit"
 version = "0.1.0"
 dependencies = [
  "async-trait",
+ "bincode",
  "serde",
  "serde_json",
  "thiserror",
