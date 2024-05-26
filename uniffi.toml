@@ -1,0 +1,23 @@
+# [bindings.swift]
+# generate_immutable_records = true
+# experimental_sendable_value_types = true
+
+# [bindings.swift.custom_types.Url]
+# # Name of the type in the Swift code
+# type_name = "URL"
+# # Modules that need to be imported
+# imports = ["Foundation"]
+# # Functions to convert between strings and URLs
+# into_custom = "URL(string: {})!"
+# from_custom = "String(describing: {})"
+
+# # Assuming a Custom Type named URL using a String as the builtin.
+# [bindings.python.custom_types.Url]
+# imports = ["urllib.parse"]
+# # Functions to convert between strings and the ParsedUrl class
+# into_custom = "urllib.parse.urlparse({})"
+# from_custom = "urllib.parse.urlunparse({})"
+[bindings.swift]
+cdylib_name = "loggit"
+module_name = "loggit"
+experimental_sendable_value_types = true

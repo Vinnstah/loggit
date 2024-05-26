@@ -24,19 +24,19 @@ impl Client {
     pub fn new(
         strategy: LoggingStrategy,
         network_antenna: Option<Arc<dyn NetworkAntenna>>,
-    ) -> Self {
+    ) -> Arc<Self> {
         match strategy {
-            LoggingStrategy::Local => Self {
+            LoggingStrategy::Local => Arc::new(Self {
                 strategy,
                 http_client: None,
-            },
-            LoggingStrategy::Cloud(_) => Self {
+            }),
+            LoggingStrategy::Cloud(_) => Arc::new(Self {
                 strategy,
                 http_client: Some(HttpClient {
                     network_antenna: network_antenna
                         .expect("Network Antenna should be present if strategy is Cloud"),
                 }),
-            },
+            }),
         }
     }
 }

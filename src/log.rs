@@ -1,4 +1,7 @@
-use std::{fmt::{Debug, Display}, time::SystemTime};
+use std::{
+    fmt::{Debug, Display},
+    time::SystemTime,
+};
 
 use serde::{Deserialize, Serialize};
 use uniffi::{Enum, Record};
@@ -12,9 +15,9 @@ pub struct Log {
     pub timestamp: SystemTime,
 }
 
-#[uniffi::export]
+// #[uniffi::export]
 impl Log {
-    #[uniffi::constructor]
+    // #[uniffi::constructor]
     pub fn new(context: Context, message: Message, level: Level) -> Self {
         Self {
             context,
@@ -27,7 +30,11 @@ impl Log {
 
 impl Display for Log {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "[{}] {:#?}: {}", self.level, self.timestamp, self.message)
+        write!(
+            f,
+            "[{}] {:#?}: {}",
+            self.level, self.timestamp, self.message
+        )
     }
 }
 
@@ -56,7 +63,7 @@ pub enum Filter {
     Time,
     Context,
     Text,
-    Level(Level)
+    Level(Level),
 }
 
 impl Display for Level {

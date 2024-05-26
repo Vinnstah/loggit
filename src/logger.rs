@@ -1,4 +1,7 @@
-use uniffi::Enum;
+use uniffi::{Enum, Record};
+
+#[derive(Debug, Clone, Record, PartialEq, Eq)]
+pub struct Logger {}
 
 #[derive(Debug, Clone, Enum, PartialEq, Eq)]
 pub enum LoggingStrategy {
@@ -14,7 +17,4 @@ pub enum Provider {
 }
 
 #[cfg(test)]
-mod tests {
-
-    
-}
+mod tests {}
