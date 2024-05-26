@@ -1,3 +1,5 @@
+use std::io::Error;
+
 use serde::Deserialize;
 use thiserror::Error as ThisError;
 use uniffi::Error;
@@ -45,11 +47,14 @@ pub enum CommonError {
     FailedToSerializeToJSON,
 
     #[error("From Networking Error")]
-    FromNetworkingError { from: NetworkingError }
+    FromNetworkingError { from: NetworkingError },
 }
 
 #[derive(Debug, PartialEq, Eq, Clone, ThisError, Error, Deserialize)]
 pub enum RustSideError {
+    #[error("IO Error")]
+    IOError { error: String },
+
     #[error("No response code")]
     NoResponseCode,
 

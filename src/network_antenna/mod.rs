@@ -1,4 +1,4 @@
 pub mod network_antenna;
 pub mod error;
-pub mod client;
-pub mod network_request;
+pub mod transfer_client;
+pub mod http_client;

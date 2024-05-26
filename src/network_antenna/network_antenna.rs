@@ -1,7 +1,7 @@
 use crate::network_antenna::error::FFIBridgeError;
 use uniffi::Record;
 
-use super::{error::NetworkingError, network_request::NetworkRequest};
+use super::{error::NetworkingError, http_client::network_request::NetworkRequest};
 
 #[uniffi::export(with_foreign)]
 #[async_trait::async_trait]

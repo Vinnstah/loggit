@@ -1,5 +1,4 @@
-use super::error::CommonError;
-use crate::UniffiCustomTypeConverter;
+use crate::{network_antenna::error::CommonError, UniffiCustomTypeConverter};
 use serde::Serialize;
 use std::collections::HashMap;
 use url::Url;

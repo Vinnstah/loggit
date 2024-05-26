@@ -1,11 +1,9 @@
-use super::{error::CommonError, network_antenna::NetworkAntenna, network_request::NetworkRequest};
+use super::{http_client::http_client::HttpClient, network_antenna::NetworkAntenna};
 use crate::{
     log::{Context, Filter, Log, Message},
     logger::LoggingStrategy,
 };
-use serde::Deserialize;
 use std::{
-    any::type_name,
     fs::File,
     io::{Read, Write},
     sync::Arc,
@@ -13,13 +11,13 @@ use std::{
 use uniffi::Object;
 
 #[derive(Object)]
-pub struct Client {
+pub struct TransferClient {
     pub strategy: LoggingStrategy,
     pub http_client: Option<HttpClient>,
 }
 
 #[uniffi::export]
-impl Client {
+impl TransferClient {
     #[uniffi::constructor]
     pub fn new(
         strategy: LoggingStrategy,
@@ -41,61 +39,7 @@ impl Client {
     }
 }
 
-pub struct HttpClient {
-    network_antenna: Arc<dyn NetworkAntenna>,
-}
-
-impl HttpClient {
-    pub fn new(network_antenna: Arc<dyn NetworkAntenna>) -> Self {
-        Self { network_antenna }
-    }
-}
-
-impl HttpClient {
-    pub async fn execute_network_request(
-        &self,
-        request: NetworkRequest,
-    ) -> Result<Vec<u8>, CommonError> {
-        let response = self
-            .network_antenna
-            .execute_network_request(request)
-            .await
-            .map_err(|err| CommonError::FromNetworkingError { from: err })?;
-
-        // Check for valid status code
-        if !(200..=299).contains(&response.status_code) {
-            return Err(CommonError::NetworkResponseBadCode);
-        }
-
-        Ok(response.body)
-    }
-}
-
-impl HttpClient {
-    fn model_from_response<U>(&self, bytes: Vec<u8>) -> Result<U, CommonError>
-    where
-        U: for<'a> Deserialize<'a>,
-    {
-        serde_json::from_slice::<U>(&bytes).map_err(|_| {
-            CommonError::NetworkResponseJSONDeserialize {
-                into_type: type_name::<U>().to_string(),
-            }
-        })
-    }
-
-    pub async fn execute_request_with_decoding<U>(
-        &self,
-        request: NetworkRequest,
-    ) -> Result<U, CommonError>
-    where
-        U: for<'a> Deserialize<'a>,
-    {
-        let response = self.execute_network_request(request).await?;
-        self.model_from_response(response)
-    }
-}
-
-impl Client {
+impl TransferClient {
     pub fn write_log(&self, log: Log) -> Result<usize, std::io::Error> {
         match self.strategy {
             LoggingStrategy::Local => {
@@ -140,13 +84,13 @@ mod tests {
     use crate::{
         log::Log,
         logger::LoggingStrategy,
-        network_antenna::client::{Client, Placeholder},
+        network_antenna::transfer_client::{Placeholder, TransferClient},
     };
 
     #[test]
     fn write_to_file() {
         let placeholder = Log::placeholder();
-        let client = Client::new(LoggingStrategy::Local, None);
+        let client = TransferClient::new(LoggingStrategy::Local, None);
         client.write_log(placeholder).expect("Write log to file");
         assert!(File::open("log.txt").is_ok())
     }
@@ -154,7 +98,7 @@ mod tests {
     #[test]
     fn read_message_from_file() {
         write_to_file();
-        let client = Client::new(LoggingStrategy::Local, None);
+        let client = TransferClient::new(LoggingStrategy::Local, None);
         let log = client
             .retrieve_logs(crate::log::Filter::Text)
             .expect("Retrieve and deserialize log");
