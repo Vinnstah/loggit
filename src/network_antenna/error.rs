@@ -9,6 +9,9 @@ pub enum NetworkingError {
     #[error("Fail to create Swift 'Foundation.URL' from string: '{string}'")]
     FailedToCreateURLFrom { string: String },
 
+    #[error("Fail to upload log to {}", provider)]
+    FailedToUploadLog { string: String, provider: String },
+
     #[error(
         "Swift 'URLRequest' failed with code '{:?}', error message from Gateway: '{:?}', underlying error (URLSession): '{:?}'",
         status_code,
@@ -54,6 +57,9 @@ pub enum CommonError {
 pub enum RustSideError {
     #[error("IO Error")]
     IOError { error: String },
+
+    #[error("Networking error")]
+    NetworkingError { error: String },
 
     #[error("No response code")]
     NoResponseCode,

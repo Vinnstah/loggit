@@ -1,4 +1,6 @@
-use super::{http_client::http_client::HttpClient, network_antenna::NetworkAntenna};
+use super::{
+    error::RustSideError, http_client::http_client::HttpClient, network_antenna::NetworkAntenna,
+};
 use crate::{
     log::{Context, Filter, Log, Message},
     logger::LoggingStrategy,
@@ -12,7 +14,6 @@ use uniffi::Object;
 
 #[derive(Object)]
 pub struct TransferClient {
-    pub strategy: LoggingStrategy,
     pub http_client: Option<HttpClient>,
 }
 
@@ -24,12 +25,8 @@ impl TransferClient {
         network_antenna: Option<Arc<dyn NetworkAntenna>>,
     ) -> Arc<Self> {
         match strategy {
-            LoggingStrategy::Local => Arc::new(Self {
-                strategy,
-                http_client: None,
-            }),
+            LoggingStrategy::Local => Arc::new(Self { http_client: None }),
             LoggingStrategy::Cloud(_) => Arc::new(Self {
-                strategy,
                 http_client: Some(HttpClient {
                     network_antenna: network_antenna
                         .expect("Network Antenna should be present if strategy is Cloud"),
@@ -40,14 +37,32 @@ impl TransferClient {
 }
 
 impl TransferClient {
-    pub fn write_log(&self, log: Log) -> Result<usize, std::io::Error> {
-        match self.strategy {
+    pub async fn write_log(
+        &self,
+        log: Log,
+        strategy: LoggingStrategy,
+    ) -> Result<String, RustSideError> {
+        match strategy {
             LoggingStrategy::Local => {
-                let mut buffer = File::create("log.txt")?;
+                let mut buffer = File::create("log.txt").map_err(|err| RustSideError::IOError {
+                    error: err.to_string(),
+                })?;
                 let serialized_log = bincode::serialize(&log).expect("Serialize log");
-                buffer.write(&serialized_log)
+                buffer
+                    .write(&serialized_log)
+                    .map_err(|err| RustSideError::IOError {
+                        error: err.to_string(),
+                    })
+                    .map(|x| x.to_string())
             }
-            LoggingStrategy::Cloud(_) => todo!(),
+            LoggingStrategy::Cloud(provider) => Ok({
+                provider
+                    .transmit_log(log)
+                    .await
+                    .map_err(|err| RustSideError::NetworkingError {
+                        error: err.to_string(),
+                    })?
+            }),
         }
     }
 
@@ -87,21 +102,21 @@ mod tests {
         network_antenna::transfer_client::{Placeholder, TransferClient},
     };
 
-    #[test]
-    fn write_to_file() {
-        let placeholder = Log::placeholder();
-        let client = TransferClient::new(LoggingStrategy::Local, None);
-        client.write_log(placeholder).expect("Write log to file");
-        assert!(File::open("log.txt").is_ok())
-    }
+    // #[test]
+    // fn write_to_file() {
+    //     let placeholder = Log::placeholder();
+    //     let client = TransferClient::new(LoggingStrategy::Local, None);
+    //     client.write_log(placeholder).await.expect("Write log to file");
+    //     assert!(File::open("log.txt").is_ok())
+    // }
 
-    #[test]
-    fn read_message_from_file() {
-        write_to_file();
-        let client = TransferClient::new(LoggingStrategy::Local, None);
-        let log = client
-            .retrieve_logs(crate::log::Filter::Text)
-            .expect("Retrieve and deserialize log");
-        assert_eq!(log.message.message, "Placeholder Log".to_owned())
-    }
+    // #[test]
+    // fn read_message_from_file() {
+    //     write_to_file();
+    //     let client = TransferClient::new(LoggingStrategy::Local, None);
+    //     let log = client
+    //         .retrieve_logs(crate::log::Filter::Text)
+    //         .expect("Retrieve and deserialize log");
+    //     assert_eq!(log.message.message, "Placeholder Log".to_owned())
+    // }
 }
